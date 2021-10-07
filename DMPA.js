@@ -1,4 +1,4 @@
-export class DMPA {
+class DMPA {
     /**
      * 
      * @param {String[]} alphbet // алфавит
@@ -6,7 +6,7 @@ export class DMPA {
      * @param {String} startState // Начальное состояние
      * @param {String[]} finishState // Финальные состояния 
      * @param {Object} transitions // Таблица переходов
-     * @param {String[]} alphbetStore // Алфавит магазана
+     * @param {String} alphbetStore // Алфавит магазана
      * @param {String[]} initStore // Начальная состояние магазина
      */
     constructor(alphbet, states, startState, finishState, transitions, alphbetStore, initStore) {
@@ -16,7 +16,9 @@ export class DMPA {
         this.finishState = finishState;
         this.transitions = transitions;
         this.alphbetStore = alphbetStore;
-        this.initStore = initStore;
+        this.store = initStore;
+        this.startPosition = startState;
+        this.initStore = [...initStore];
     }
 
     /** // Проверка есть ли переход
@@ -34,15 +36,29 @@ export class DMPA {
     /**
      * 
      * @param {String} symbol 
-     * @param {String} symbolStore 
      */
-    _changeState(symbol, symbolStore) {
-        symbol = symbol.toLocaleLowerCase()
+    _changeState(symbol) {
+        symbol = symbol.toLowerCase();
         if(this._checkExistTransition(this.currentState,symbol)) {
+            if(symbol === '(') {
+                this.store.push(this.alphbetStore);
+            }
+
+            if(symbol === ')' && !this.store.pop()) {
+                this._comeBackStartPosition();
+                throw new Error('Ошибка скобок')
+            }
+
             this.currentState = this.transitions[this.currentState][symbol];
         } else {
-            throw new Error('Erooooorrrr')  
+            this._comeBackStartPosition();
+            throw new Error('Ошибка перехода')
         }
+    }
+
+    _comeBackStartPosition() {
+        this.currentState = this.startPosition;
+        this.store = [...this.initStore]
     }
 
     /**
@@ -56,7 +72,8 @@ export class DMPA {
         if (this.alphbet.includes(symbol)) {
             return true
         } else {
-            throw new Error('Error');
+            this._comeBackStartPosition();
+            throw new Error('Ошибка алфавита');
         }
     }
     /**
@@ -66,22 +83,18 @@ export class DMPA {
      */
 
     test(value) {
-        value = value.replaceAll(/[ ]+/ig,'');
+        value = String(value).replaceAll(/[ ]+/ig,'');
 
         for(const symbol of value) {
             this._checkBelogAlphabet(symbol)
             this._changeState(symbol);
         }
 
-        return this.finishState.includes(this.currentState);
-    }
+        const result = this.finishState.includes(this.currentState);
+        this._comeBackStartPosition();
 
-}
-
-
-const a = {
-    q0: {
-       0: {value: 'q0' , store: '~'},
-       0: {value: 'q0' , store: '('},
+        return result
     }
 }
+
+module.exports = DMPA;
