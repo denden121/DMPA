@@ -15,7 +15,6 @@ class DMPA {
         this.currentState = startState;
         this.finishState = finishState;
         this.transitions = transitions;
-        this.alphbetStore = alphbetStore;
         this.store = initStore;
         this.startPosition = startState;
         this.initStore = [...initStore];
@@ -41,14 +40,13 @@ class DMPA {
         symbol = symbol.toLowerCase();
         if(this._checkExistTransition(this.currentState,symbol)) {
             if(symbol === '(') {
-                this.store.push(this.alphbetStore);
+                this.store.push(symbol);
             }
 
             if(symbol === ')' && !this.store.pop()) {
                 this._comeBackStartPosition();
                 throw new Error('Ошибка скобок')
             }
-
             this.currentState = this.transitions[this.currentState][symbol];
         } else {
             this._comeBackStartPosition();
