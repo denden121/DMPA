@@ -1,3 +1,5 @@
+var index = require('./index');
+
 class DMPA {
     /**
      * 
@@ -8,8 +10,9 @@ class DMPA {
      * @param {Object} transitions // Таблица переходов
      * @param {String} alphbetStore // Алфавит магазана
      * @param {String[]} initStore // Начальная состояние магазина
+     * @param {Boolean} ignoreCase // Флаг игнорировая символов
      */
-    constructor(alphbet, states, startState, finishState, transitions, alphbetStore, initStore) {
+    constructor(alphbet, states, startState, finishState, transitions, alphbetStore, initStore, ignoreCase) {
         this.alphbet = alphbet;
         this.states = states;
         this.currentState = startState;
@@ -18,6 +21,7 @@ class DMPA {
         this.store = initStore;
         this.startPosition = startState;
         this.initStore = [...initStore];
+        this.ignoreCase = ignoreCase
     }
 
     /** // Проверка есть ли переход
@@ -28,8 +32,7 @@ class DMPA {
      */
 
     _checkExistTransition(state, symbol) {
-        symbol = symbol.toLocaleLowerCase()
-        return (this.transitions[state] && this.transitions[state][symbol])
+        return (this.transitions[state] && this.transitions[state][symbol] && this.transitions[state][symbol][0])
     }
 
     /**
@@ -37,17 +40,14 @@ class DMPA {
      * @param {String} symbol 
      */
     _changeState(symbol) {
-        symbol = symbol.toLowerCase();
+        if (this.ignoreCase) {
+            symbol = symbol.toLowerCase();
+        }
         if(this._checkExistTransition(this.currentState,symbol)) {
-            if(symbol === '(') {
-                this.store.push(symbol);
+            if(this.transitions[this.currentState][symbol] && this.transitions[this.currentState][symbol][1]) {
+                this.transitions[this.currentState][symbol][1](symbol)
             }
-
-            if(symbol === ')' && !this.store.pop()) {
-                this._comeBackStartPosition();
-                throw new Error('Ошибка скобок')
-            }
-            this.currentState = this.transitions[this.currentState][symbol];
+            this.currentState = this.transitions[this.currentState][symbol][0];
         } else {
             this._comeBackStartPosition();
             throw new Error('Ошибка перехода')
@@ -66,7 +66,6 @@ class DMPA {
      */
 
     _checkBelogAlphabet(symbol) {
-        symbol = symbol.toLocaleLowerCase()
         if (this.alphbet.includes(symbol)) {
             return true
         } else {
@@ -81,18 +80,20 @@ class DMPA {
      */
 
     test(value) {
-        value = String(value).replaceAll(/[ ]+/ig,'');
 
         for(const symbol of value) {
             this._checkBelogAlphabet(symbol)
             this._changeState(symbol);
         }
 
-        const result = this.finishState.includes(this.currentState);
+        const result = this.finishState.includes(this.currentState) && !this.store.length;
+        index.addValueToStore()
+        index.finishCode()
+        index.optimization()
         this._comeBackStartPosition();
 
         return result
     }
 }
 
-module.exports = DMPA;
+module.exports.DMPA = DMPA;
